@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.git/
+.github/
+.venv/
+venv/
+frontend/
+node_modules/
+VSCodeUserSetup-x64-1.103.0.exe
+*.exe
+.env
+db_data/
+postgres_data/
