@@ -11,7 +11,7 @@ export function AuthProvider({ children }) {
     try {
       const token = localStorage.getItem('rf_access_token');
       if (!token) { setLoading(false); return; }
-      const data = await apiJson('/auth/me');
+      const data = await apiJson('/users/me');
       setUser(data);
     } catch {
       clearTokens();

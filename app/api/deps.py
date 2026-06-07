@@ -6,21 +6,19 @@ from collections.abc import AsyncIterator, Callable
 from typing import Any
 from uuid import UUID
 
-from fastapi import Depends, Header, HTTPException, Security, status
-from fastapi.security import APIKeyHeader, OAuth2PasswordBearer
+from fastapi import Depends, Header, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy import select
+from sqlalchemy.orm import joinedload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import TokenError, decode_token
 from app.db.session import get_db
-from app.models.api_key import ApiKey
 from app.models.membership import Membership
 from app.models.organization import Organization
 from app.models.user import User
-from app.services.api_key_service import ApiKeyService
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login", auto_error=False)
-api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 
 
 async def db_session() -> AsyncIterator[AsyncSession]:
@@ -56,39 +54,6 @@ async def get_current_user(
     return user
 
 
-async def get_current_user_or_api_key(
-    session: AsyncSession = Depends(db_session),
-    token: str | None = Depends(oauth2_scheme),
-    api_key: str | None = Security(api_key_header),
-) -> tuple[User | None, ApiKey | None, UUID | None]:
-    """Authenticate via JWT or API key. Returns (user, api_key_model, organization_id).
-
-    At least one of JWT token or API key must be present.
-    """
-    # Try JWT first
-    if token:
-        try:
-            payload = decode_token(token, expected_type="access")
-            subject = payload.get("sub")
-            if subject:
-                user = await session.get(User, UUID(str(subject)))
-                if user and user.is_active and user.deleted_at is None:
-                    org_id = payload.get("organization_id")
-                    return user, None, UUID(str(org_id)) if org_id else None
-        except (TokenError, ValueError):
-            pass
-
-    # Try API key
-    if api_key:
-        service = ApiKeyService(session)
-        key_model = await service.verify(api_key)
-        if key_model:
-            return None, key_model, key_model.organization_id
-
-    raise HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Valid Bearer token or API key required",
-    )
 
 
 async def get_current_membership(
@@ -98,7 +63,7 @@ async def get_current_membership(
     x_organization_id: UUID | None = Header(default=None, alias="X-Organization-ID"),
 ) -> Membership:
     candidate_org_id = x_organization_id or payload.get("organization_id") or payload.get("tenant_id")
-    stmt = select(Membership).where(
+    stmt = select(Membership).options(joinedload(Membership.organization)).where(
         Membership.user_id == user.id,
         Membership.is_active.is_(True),
         Membership.deleted_at.is_(None),

@@ -22,7 +22,8 @@ class IdempotencyMiddleware(BaseHTTPMiddleware):
             if existing:
                 return JSONResponse({"detail": "Duplicate request"}, status_code=409)
             response = await call_next(request)
-            await redis.set(cache_key, "1", ex=24 * 3600)
+            if 200 <= response.status_code < 300:
+                await redis.set(cache_key, "1", ex=24 * 3600)
             return response
         except RedisError:
             return await call_next(request)

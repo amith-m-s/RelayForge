@@ -2,14 +2,20 @@ import { useState, useEffect } from 'react';
 import { Calendar, Webhook, CheckCircle, XCircle, TrendingUp, Activity } from 'lucide-react';
 import { apiJson } from '../api/client';
 import StatusBadge from '../components/StatusBadge';
+import { useOrg } from '../hooks/useOrg';
+import { useToast } from '../components/ui/Toast';
 
 export default function DashboardPage() {
+  const { currentOrg } = useOrg();
+  const toast = useToast();
   const [overview, setOverview] = useState(null);
   const [endpoints, setEndpoints] = useState([]);
   const [deliveries, setDeliveries] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!currentOrg) return;
+
     const load = async () => {
       try {
         const [ov, ep, del] = await Promise.all([
@@ -20,13 +26,33 @@ export default function DashboardPage() {
         setOverview(ov);
         setEndpoints(ep);
         setDeliveries(del.items || []);
-      } catch { /* ignore */ }
+      } catch (err) {
+        toast.error('Failed to load dashboard data: ' + err.message);
+      }
       setLoading(false);
     };
+
     load();
-    const interval = setInterval(load, 15000);
-    return () => clearInterval(interval);
-  }, []);
+
+    const handleInterval = () => {
+      if (document.visibilityState === 'visible') {
+        load();
+      }
+    };
+    const interval = setInterval(handleInterval, 15000);
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        load();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [currentOrg]);
 
   if (loading) {
     return (

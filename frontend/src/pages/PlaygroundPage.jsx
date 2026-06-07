@@ -65,13 +65,13 @@ export default function PlaygroundPage() {
           setSelectedEndpointId(active[0].id);
         }
       } catch (err) {
-        toast.error('Failed to load webhook endpoints');
+        toast.error('Failed to load webhook endpoints: ' + err.message);
       } finally {
         setLoading(false);
       }
     };
     loadEndpoints();
-  }, [toast]);
+  }, []);
 
   const handleTemplateChange = (type) => {
     setEventType(type);
@@ -98,10 +98,16 @@ export default function PlaygroundPage() {
 
     setTriggering(true);
     setDeliveryResult(null);
+    
+    const timestamp = new Date().toLocaleTimeString();
     setLogs([
-      { type: 'info', text: 'Initializing simulation environment...' },
-      { type: 'info', text: `Preparing event: "${eventType}"` },
+      { type: 'info', text: 'Initializing simulation environment...', timestamp },
+      { type: 'info', text: `Preparing event: "${eventType}"`, timestamp },
     ]);
+
+    const log = (type, text) => {
+      setLogs(prev => [...prev, { type, text, timestamp: new Date().toLocaleTimeString() }]);
+    };
 
     try {
       // 1. Trigger the event through the API
@@ -121,11 +127,8 @@ export default function PlaygroundPage() {
       }
 
       const eventData = await res.json();
-      setLogs(prev => [
-        ...prev,
-        { type: 'success', text: `Event created successfully (ID: ${eventData.id})` },
-        { type: 'info', text: 'Queuing webhook delivery task...' }
-      ]);
+      log('success', `Event created successfully (ID: ${eventData.id})`);
+      log('info', 'Queuing webhook delivery task...');
 
       // 2. Poll for the delivery object mapping to this event
       let deliveryObj = null;
@@ -136,10 +139,7 @@ export default function PlaygroundPage() {
         attempts++;
         await new Promise(r => setTimeout(r, 1000));
         
-        setLogs(prev => [
-          ...prev,
-          { type: 'poll', text: `Polling delivery state... (attempt ${attempts}/${maxAttempts})` }
-        ]);
+        log('poll', `Polling delivery state... (attempt ${attempts}/${maxAttempts})`);
 
         const delRes = await apiJson(`/deliveries?limit=10`);
         const matchingDelivery = (delRes.items || []).find(d => d.event_id === eventData.id);
@@ -156,37 +156,32 @@ export default function PlaygroundPage() {
         throw new Error('Delivery timeout: Delivery task did not execute in time.');
       }
 
-      setLogs(prev => [
-        ...prev,
-        { type: 'success', text: `Delivery execution captured! Status: ${deliveryObj.status.toUpperCase()}` }
-      ]);
+      log('success', `Delivery execution captured! Status: ${deliveryObj.status.toUpperCase()}`);
 
       // 3. Load full details including delivery attempts
       const detailRes = await apiJson(`/deliveries/${deliveryObj.id}`);
-      setDeliveryResult(detailRes);
+      const attemptsRes = await apiJson(`/deliveries/${deliveryObj.id}/attempts`);
+      
+      setDeliveryResult({
+        ...detailRes,
+        attempts: attemptsRes.items || []
+      });
 
-      if (detailRes.attempts && detailRes.attempts.length > 0) {
-        const lastAttempt = detailRes.attempts[detailRes.attempts.length - 1];
-        setLogs(prev => [
-          ...prev,
-          { type: 'info', text: `[HTTP Status] ${lastAttempt.http_status || 'Connection Refused/Error'}` },
-          { type: 'info', text: `[Latency] ${lastAttempt.duration_ms || 0}ms` },
-          lastAttempt.http_status >= 200 && lastAttempt.http_status < 300 
-            ? { type: 'success', text: 'Webhook successfully delivered!' }
-            : { type: 'error', text: `Webhook failed: HTTP ${lastAttempt.http_status}` }
-        ]);
+      if (attemptsRes.items && attemptsRes.items.length > 0) {
+        const lastAttempt = attemptsRes.items[attemptsRes.items.length - 1];
+        log('info', `[HTTP Status] ${lastAttempt.http_status || 'Connection Refused/Error'}`);
+        log('info', `[Latency] ${lastAttempt.duration_ms || 0}ms`);
+        if (lastAttempt.http_status >= 200 && lastAttempt.http_status < 300) {
+          log('success', 'Webhook successfully delivered!');
+        } else {
+          log('error', `Webhook failed: HTTP ${lastAttempt.http_status}`);
+        }
       } else {
-        setLogs(prev => [
-          ...prev,
-          { type: 'error', text: 'Delivery attempted but no network logs returned.' }
-        ]);
+        log('error', 'Delivery attempted but no network logs returned.');
       }
 
     } catch (err) {
-      setLogs(prev => [
-        ...prev,
-        { type: 'error', text: `Simulation error: ${err.message}` }
-      ]);
+      log('error', `Simulation error: ${err.message}`);
       toast.error(err.message || 'Simulation failed');
     } finally {
       setTriggering(false);
@@ -342,7 +337,7 @@ export default function PlaygroundPage() {
                   if (log.type === 'poll') color = 'var(--color-warning)';
                   return (
                     <div key={index} style={{ color }}>
-                      <span style={{ opacity: 0.5 }}>[{new Date().toLocaleTimeString()}]</span> {log.text}
+                      <span style={{ opacity: 0.5 }}>[{log.timestamp || new Date().toLocaleTimeString()}]</span> {log.text}
                     </div>
                   );
                 })
@@ -393,7 +388,13 @@ X-RelayForge-Delivery-ID: ${deliveryResult.id}`}
                       </pre>
                       <div style={{ color: 'var(--color-primary-light)', marginTop: '1rem', marginBottom: '0.5rem' }}>Payload Body:</div>
                       <pre style={{ margin: 0 }}>
-                        {JSON.stringify(JSON.parse(payloadText), null, 2)}
+                        {(() => {
+                          try {
+                            return JSON.stringify(JSON.parse(payloadText), null, 2);
+                          } catch (e) {
+                            return payloadText;
+                          }
+                        })()}
                       </pre>
                     </div>
                   ) : (

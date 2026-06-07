@@ -21,6 +21,6 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                 await redis.expire(key, 60)
             if current > settings.rate_limit_default:
                 return JSONResponse({"detail": "Rate limit exceeded"}, status_code=429)
-        except Exception:
+        except RedisError:
             pass
         return await call_next(request)

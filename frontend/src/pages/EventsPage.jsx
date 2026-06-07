@@ -1,24 +1,31 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import { Calendar, Search, ChevronDown, ChevronRight } from 'lucide-react';
 import { apiJson } from '../api/client';
 import EmptyState from '../components/EmptyState';
+import { useToast } from '../components/ui/Toast';
+import { useOrg } from '../hooks/useOrg';
 
 export default function EventsPage() {
+  const { currentOrg } = useOrg();
+  const toast = useToast();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [expanded, setExpanded] = useState(null);
 
   useEffect(() => {
+    if (!currentOrg) return;
     const load = async () => {
       try {
         const data = await apiJson('/events?limit=50');
         setEvents(data.items || []);
-      } catch { /* ignore */ }
+      } catch (err) {
+        toast.error('Failed to load events: ' + err.message);
+      }
       setLoading(false);
     };
     load();
-  }, []);
+  }, [currentOrg]);
 
   const filtered = events.filter(ev =>
     ev.source?.toLowerCase().includes(search.toLowerCase()) ||
@@ -61,8 +68,8 @@ export default function EventsPage() {
               </thead>
               <tbody>
                 {filtered.map(ev => (
-                  <>
-                    <tr key={ev.id} className="table-row-clickable" onClick={() => setExpanded(expanded === ev.id ? null : ev.id)}>
+                  <Fragment key={ev.id}>
+                    <tr className="table-row-clickable" onClick={() => setExpanded(expanded === ev.id ? null : ev.id)}>
                       <td style={{width:30}}>{expanded === ev.id ? <ChevronDown size={16} /> : <ChevronRight size={16} />}</td>
                       <td className="font-mono text-sm">{ev.id?.slice(0, 12)}…</td>
                       <td>{ev.source}</td>
@@ -70,7 +77,7 @@ export default function EventsPage() {
                       <td className="text-muted text-sm">{new Date(ev.created_at).toLocaleString()}</td>
                     </tr>
                     {expanded === ev.id && (
-                      <tr key={`${ev.id}-detail`} className="detail-row">
+                      <tr className="detail-row">
                         <td colSpan={5}>
                           <div className="json-viewer">
                             <div className="json-header">Event Details</div>
@@ -79,7 +86,7 @@ export default function EventsPage() {
                         </td>
                       </tr>
                     )}
-                  </>
+                  </Fragment>
                 ))}
               </tbody>
             </table>

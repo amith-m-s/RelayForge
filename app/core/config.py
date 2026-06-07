@@ -10,9 +10,9 @@ class Settings(BaseSettings):
 
     app_name: str = "RelayForge"
     environment: str = "local"
-    debug: bool = True
+    debug: bool = False
 
-    secret_key: str = "change-me-please-change-in-production"
+    secret_key: str
     access_token_expire_minutes: int = 15
     refresh_token_expire_days: int = 30
 
@@ -20,10 +20,16 @@ class Settings(BaseSettings):
     redis_url: str = "redis://redis:6379/0"
     celery_broker_url: str = "redis://redis:6379/1"
     celery_result_backend: str = "redis://redis:6379/2"
-    webhook_signing_secret: str = "change-me-please-change-in-production"
+    webhook_signing_secret: str
 
     rate_limit_default: int = 100
     api_v1_prefix: str = "/api/v1"
+    cors_origins: list[str] = [
+        "http://localhost:5173",
+        "http://localhost:3000",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:3000",
+    ]
 
 
 @lru_cache

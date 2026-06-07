@@ -43,28 +43,28 @@ export default function RegisterPage() {
 
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="form-group">
-            <label className="form-label">Full Name</label>
+            <label htmlFor="reg-name" className="form-label">Full Name</label>
             <div className="input-icon-wrapper">
               <User size={18} className="input-icon" />
               <input id="reg-name" type="text" className="form-input" placeholder="Jane Smith" value={form.full_name} onChange={update('full_name')} required />
             </div>
           </div>
           <div className="form-group">
-            <label className="form-label">Email</label>
+            <label htmlFor="reg-email" className="form-label">Email</label>
             <div className="input-icon-wrapper">
               <Mail size={18} className="input-icon" />
               <input id="reg-email" type="email" className="form-input" placeholder="you@company.com" value={form.email} onChange={update('email')} required />
             </div>
           </div>
           <div className="form-group">
-            <label className="form-label">Password</label>
+            <label htmlFor="reg-password" className="form-label">Password</label>
             <div className="input-icon-wrapper">
               <Lock size={18} className="input-icon" />
               <input id="reg-password" type="password" className="form-input" placeholder="Min 12 characters" value={form.password} onChange={update('password')} minLength={12} required />
             </div>
           </div>
           <div className="form-group">
-            <label className="form-label">Organization Name</label>
+            <label htmlFor="reg-org" className="form-label">Organization Name</label>
             <div className="input-icon-wrapper">
               <Building2 size={18} className="input-icon" />
               <input id="reg-org" type="text" className="form-input" placeholder="Acme Inc" value={form.organization_name} onChange={update('organization_name')} required />

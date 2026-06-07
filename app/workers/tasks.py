@@ -122,6 +122,7 @@ async def _dispatch_delivery_async(
         signature = sign_webhook_payload(
             payload_bytes,
             timestamp,
+            secret=endpoint.secret_hash,
         )
 
         headers = {
@@ -256,7 +257,7 @@ async def _dispatch_delivery_async(
             }
 
         except Exception as exc:
-
+            await session.rollback()
             error_message = str(exc)
 
             duration_ms = int(
@@ -341,15 +342,7 @@ def dispatch_delivery(
     self,
     delivery_id: str,
 ) -> dict[str, str]:
-
-    async def _dispatch_wrapper() -> dict[str, str]:
-        from app.db.session import engine
-        try:
-            return await _dispatch_delivery_async(delivery_id)
-        finally:
-            await engine.dispose()
-
-    return async_to_sync(_dispatch_wrapper)()
+    return async_to_sync(_dispatch_delivery_async)(delivery_id)
 
 
 @shared_task(bind=True)

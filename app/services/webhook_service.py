@@ -55,13 +55,16 @@ class WebhookService:
     async def list_endpoints(
         self, organization_id: UUID, limit: int = 20, offset: int = 0
     ) -> tuple[list[WebhookEndpoint], int]:
-        count_stmt = select(WebhookEndpoint).where(
+        from sqlalchemy import func
+        base_query = select(WebhookEndpoint).where(
             WebhookEndpoint.organization_id == organization_id, WebhookEndpoint.deleted_at.is_(None)
         )
-        result = await self.session.execute(count_stmt)
-        items = list(result.scalars().all())
-        total = len(items)
-        return items[offset : offset + limit], total
+        count_stmt = select(func.count()).select_from(base_query.subquery())
+        total = (await self.session.execute(count_stmt)).scalar_one()
+
+        stmt = base_query.order_by(WebhookEndpoint.created_at.desc()).limit(limit).offset(offset)
+        result = await self.session.execute(stmt)
+        return list(result.scalars().all()), int(total)
 
     async def update_endpoint(self, endpoint: WebhookEndpoint, **fields: object) -> WebhookEndpoint:
         for key, value in fields.items():

@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
 
-from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, func
+from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, func, text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -21,9 +21,9 @@ class RateLimitBucket(Base):
     organization_id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True), ForeignKey("organizations.id"), nullable=False
     )
-    key: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    key: Mapped[str] = mapped_column(String(255), nullable=False)
     window_start: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    requests_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    requests_count: Mapped[int] = mapped_column(Integer, server_default=text("0"), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -38,4 +38,5 @@ class RateLimitBucket(Base):
         Index(
             "ix_rate_limit_org_key_window", "organization_id", "key", "window_start", unique=True
         ),
+        UniqueConstraint("organization_id", "key", "window_start", name="uq_rate_limit_bucket"),
     )

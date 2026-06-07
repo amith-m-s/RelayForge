@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Webhook, Calendar, Truck, SkullIcon, BarChart3,
-  Settings, ChevronsLeft, ChevronsRight, Zap, LogOut, Bell, Terminal,
+  Settings, ChevronsLeft, ChevronsRight, Zap, LogOut, Bell, Terminal, Menu,
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import OrgSwitcher from '../components/OrgSwitcher';
@@ -26,8 +26,13 @@ const navItems = [
 
 export default function DashboardLayout() {
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const { user, logout } = useAuth();
   const location = useLocation();
+
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [location.pathname]);
 
   const getPageTitle = () => {
     const flat = navItems.flatMap(s => s.items);
@@ -41,8 +46,14 @@ export default function DashboardLayout() {
 
   return (
     <div className={`dashboard-layout ${collapsed ? 'sidebar-collapsed' : ''}`}>
+      {/* Mobile Overlay */}
+      <div 
+        className={`mobile-overlay ${mobileOpen ? 'visible' : ''}`} 
+        onClick={() => setMobileOpen(false)} 
+      />
+
       {/* Sidebar */}
-      <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
+      <aside className={`sidebar ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`}>
         <div className="sidebar-header">
           <a href="/" className="sidebar-logo">
             <div className="sidebar-logo-icon"><Zap size={20} /></div>
@@ -78,7 +89,15 @@ export default function DashboardLayout() {
       <div className="dashboard-main">
         {/* Topbar */}
         <header className="topbar">
-          <div className="topbar-left">
+          <div className="topbar-left" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <button 
+              className="mobile-menu-btn" 
+              onClick={() => setMobileOpen(true)}
+              aria-label="Open menu"
+              style={{ background: 'none', border: 'none', cursor: 'pointer', outline: 'none' }}
+            >
+              <Menu size={20} />
+            </button>
             <div className="topbar-breadcrumb">
               <span>RelayForge</span>
               <span className="topbar-breadcrumb-separator">/</span>

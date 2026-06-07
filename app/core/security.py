@@ -92,12 +92,13 @@ def hash_token(token: str) -> str:
     return sha256(token.encode("utf-8")).hexdigest()
 
 
-def sign_webhook_payload(raw_body: bytes, timestamp: str) -> str:
+def sign_webhook_payload(raw_body: bytes, timestamp: str, secret: str | None = None) -> str:
     settings = get_settings()
+    key = secret if secret is not None else settings.webhook_signing_secret
     msg = timestamp.encode("utf-8") + b"." + raw_body
-    return hmac.new(settings.webhook_signing_secret.encode("utf-8"), msg, sha256).hexdigest()
+    return hmac.new(key.encode("utf-8"), msg, sha256).hexdigest()
 
 
-def verify_webhook_signature(raw_body: bytes, timestamp: str, signature: str) -> bool:
-    expected = sign_webhook_payload(raw_body, timestamp)
+def verify_webhook_signature(raw_body: bytes, timestamp: str, signature: str, secret: str | None = None) -> bool:
+    expected = sign_webhook_payload(raw_body, timestamp, secret)
     return hmac.compare_digest(expected, signature)

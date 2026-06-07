@@ -68,6 +68,3 @@ async def logout(
     return SuccessResponse(success=True)
 
 
-@router.get("/me", response_model=UserRead)
-async def me(current_user: User = Depends(get_current_user)) -> UserRead:
-    return UserRead.model_validate(current_user)

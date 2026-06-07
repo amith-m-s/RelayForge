@@ -6,7 +6,7 @@ from datetime import UTC, datetime
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import db_session, get_current_user, get_current_membership, require_role
@@ -153,7 +153,7 @@ async def list_members(
     if str(membership.organization_id) != str(organization_id):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Organization mismatch")
 
-    stmt = (
+    base_query = (
         select(Membership, User)
         .join(User, Membership.user_id == User.id)
         .where(
@@ -161,7 +161,14 @@ async def list_members(
             Membership.is_active.is_(True),
             Membership.deleted_at.is_(None),
         )
-        .order_by(Membership.created_at)
+    )
+
+    count_stmt = select(func.count()).select_from(base_query.subquery())
+    count_result = await session.execute(count_stmt)
+    total = count_result.scalar_one()
+
+    stmt = (
+        base_query.order_by(Membership.created_at)
         .limit(paging.limit)
         .offset(paging.offset)
     )
@@ -183,7 +190,7 @@ async def list_members(
             )
         )
 
-    return MemberList(items=members, total=len(members))
+    return MemberList(items=members, total=int(total))
 
 
 @router.post("/{organization_id}/members", status_code=status.HTTP_201_CREATED)

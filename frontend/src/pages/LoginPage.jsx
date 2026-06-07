@@ -42,7 +42,7 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="form-group">
-            <label className="form-label">Email</label>
+            <label htmlFor="login-email" className="form-label">Email</label>
             <div className="input-icon-wrapper">
               <Mail size={18} className="input-icon" />
               <input
@@ -57,7 +57,7 @@ export default function LoginPage() {
             </div>
           </div>
           <div className="form-group">
-            <label className="form-label">Password</label>
+            <label htmlFor="login-password" className="form-label">Password</label>
             <div className="input-icon-wrapper">
               <Lock size={18} className="input-icon" />
               <input

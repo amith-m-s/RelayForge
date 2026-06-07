@@ -1,17 +1,19 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import { Truck, RefreshCw, ChevronDown, ChevronRight, Search, Filter } from 'lucide-react';
 import { apiJson } from '../api/client';
 import StatusBadge from '../components/StatusBadge';
 import EmptyState from '../components/EmptyState';
 import { useToast } from '../components/ui/Toast';
+import { useOrg } from '../hooks/useOrg';
 
 export default function DeliveriesPage() {
+  const { currentOrg } = useOrg();
+  const toast = useToast();
   const [deliveries, setDeliveries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('');
   const [expanded, setExpanded] = useState(null);
   const [attempts, setAttempts] = useState({});
-  const { addToast } = useToast();
 
   const load = async () => {
     try {
@@ -19,18 +21,26 @@ export default function DeliveriesPage() {
       if (statusFilter) params.set('status', statusFilter);
       const data = await apiJson(`/deliveries?${params}`);
       setDeliveries(data.items || []);
-    } catch { /* ignore */ }
+    } catch (err) {
+      toast.error('Failed to load deliveries: ' + err.message);
+    }
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, [statusFilter]);
+  useEffect(() => {
+    if (currentOrg) {
+      load();
+    }
+  }, [currentOrg, statusFilter]);
 
   const loadAttempts = async (deliveryId) => {
     if (attempts[deliveryId]) return;
     try {
       const data = await apiJson(`/deliveries/${deliveryId}/attempts`);
       setAttempts(prev => ({ ...prev, [deliveryId]: data.items || [] }));
-    } catch { /* ignore */ }
+    } catch (err) {
+      toast.error('Failed to load delivery attempts: ' + err.message);
+    }
   };
 
   const toggleExpand = (id) => {
@@ -42,10 +52,10 @@ export default function DeliveriesPage() {
   const replay = async (id) => {
     try {
       await apiJson(`/deliveries/${id}/replay`, { method: 'POST' });
-      addToast('Delivery replay queued', 'success');
+      toast.success('Delivery replay queued');
       load();
     } catch (err) {
-      addToast(err.message, 'error');
+      toast.error(err.message);
     }
   };
 
@@ -92,8 +102,8 @@ export default function DeliveriesPage() {
               </thead>
               <tbody>
                 {deliveries.map(d => (
-                  <>
-                    <tr key={d.id} className="table-row-clickable" onClick={() => toggleExpand(d.id)}>
+                  <Fragment key={d.id}>
+                    <tr className="table-row-clickable" onClick={() => toggleExpand(d.id)}>
                       <td style={{width:30}}>{expanded === d.id ? <ChevronDown size={16} /> : <ChevronRight size={16} />}</td>
                       <td className="font-mono text-sm">{d.id?.slice(0, 12)}…</td>
                       <td><StatusBadge status={d.status} /></td>
@@ -107,7 +117,7 @@ export default function DeliveriesPage() {
                       </td>
                     </tr>
                     {expanded === d.id && (
-                      <tr key={`${d.id}-attempts`} className="detail-row">
+                      <tr className="detail-row">
                         <td colSpan={7}>
                           <div className="attempt-timeline">
                             <h5 className="attempt-timeline-title">Delivery Attempts</h5>
@@ -139,7 +149,7 @@ export default function DeliveriesPage() {
                         </td>
                       </tr>
                     )}
-                  </>
+                  </Fragment>
                 ))}
               </tbody>
             </table>

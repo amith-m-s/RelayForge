@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
 
-from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, func
+from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, func, text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -21,9 +21,9 @@ class RetryPolicy(Base):
         PGUUID(as_uuid=True), ForeignKey("organizations.id"), nullable=False
     )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
-    max_attempts: Mapped[int] = mapped_column(Integer, default=8, nullable=False)
-    base_delay_seconds: Mapped[int] = mapped_column(Integer, default=30, nullable=False)
-    max_delay_seconds: Mapped[int] = mapped_column(Integer, default=3600, nullable=False)
+    max_attempts: Mapped[int] = mapped_column(Integer, server_default=text("8"), nullable=False)
+    base_delay_seconds: Mapped[int] = mapped_column(Integer, server_default=text("30"), nullable=False)
+    max_delay_seconds: Mapped[int] = mapped_column(Integer, server_default=text("3600"), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -32,4 +32,7 @@ class RetryPolicy(Base):
     )
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     organization: Mapped[Organization] = relationship()
-    __table_args__ = (Index("ix_retry_policies_org_name", "organization_id", "name", unique=True),)
+    __table_args__ = (
+        Index("ix_retry_policies_org_name", "organization_id", "name", unique=True),
+        UniqueConstraint("organization_id", "name", name="uq_retry_policies_org_name"),
+    )

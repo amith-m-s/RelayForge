@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
 
-from sqlalchemy import DateTime, ForeignKey, Index, Integer, Text, func
+from sqlalchemy import DateTime, ForeignKey, Index, Integer, Text, func, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -41,4 +41,5 @@ class DeliveryAttempt(Base):
         Index(
             "ix_delivery_attempts_delivery_attempt", "delivery_id", "attempt_number", unique=True
         ),
+        UniqueConstraint("delivery_id", "attempt_number", name="uq_delivery_attempts_delivery_attempt"),
     )

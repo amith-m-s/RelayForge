@@ -85,7 +85,14 @@ export async function api(endpoint, options = {}) {
         const newToken = await refreshAccessToken();
         isRefreshing = false;
         onRefreshed(newToken);
-      } catch {
+        
+        headers['Authorization'] = `Bearer ${newToken}`;
+        return await fetch(`${API_BASE}${endpoint}`, {
+          method,
+          headers,
+          body: body ? JSON.stringify(body) : undefined,
+        });
+      } catch (err) {
         isRefreshing = false;
         return res;
       }

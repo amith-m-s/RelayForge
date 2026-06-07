@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
 
-from sqlalchemy import DateTime, ForeignKey, Index, String, Text, func
+from sqlalchemy import DateTime, ForeignKey, Index, String, Text, func, text
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -26,8 +26,8 @@ class WebhookEndpoint(Base):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     url: Mapped[str] = mapped_column(Text, nullable=False)
     secret_hash: Mapped[str] = mapped_column(String(64), nullable=False)
-    status: Mapped[str] = mapped_column(String(50), nullable=False, default="active")
-    event_filter: Mapped[str] = mapped_column(Text, nullable=False, default="*")
+    status: Mapped[str] = mapped_column(String(50), nullable=False, server_default=text("'active'"))
+    event_filter: Mapped[str] = mapped_column(Text, nullable=False, server_default=text("'*'"))
     retry_policy_id: Mapped[UUID | None] = mapped_column(
         PGUUID(as_uuid=True), ForeignKey("retry_policies.id"), nullable=True
     )

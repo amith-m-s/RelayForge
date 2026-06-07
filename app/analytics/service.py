@@ -6,7 +6,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import case, cast, Float, func, select
+from sqlalchemy import case, func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.delivery import Delivery
@@ -90,45 +90,36 @@ class AnalyticsService:
     async def get_delivery_metrics(
         self, organization_id: UUID, window_hours: int = 24
     ) -> list[dict[str, Any]]:
-        """Time-bucketed delivery metrics for charts."""
+        """Time-bucketed delivery metrics for charts using SQL grouping."""
         now = datetime.now(UTC)
         start = now - timedelta(hours=window_hours)
 
-        # Determine bucket size based on window
-        if window_hours <= 24:
-            bucket_hours = 1
-        elif window_hours <= 168:  # 7 days
-            bucket_hours = 6
-        else:
-            bucket_hours = 24
+        trunc_precision = "hour" if window_hours <= 168 else "day"
 
         stmt = (
-            select(Delivery.status, Delivery.created_at)
+            select(
+                func.date_trunc(trunc_precision, Delivery.created_at).label("bucket"),
+                Delivery.status,
+                func.count().label("count")
+            )
             .where(
                 Delivery.organization_id == organization_id,
                 Delivery.created_at >= start,
                 Delivery.deleted_at.is_(None),
             )
-            .order_by(Delivery.created_at)
+            .group_by(text("bucket"), Delivery.status)
+            .order_by("bucket")
         )
         result = await self.session.execute(stmt)
         rows = result.all()
 
-        # Bucket the results
         buckets: dict[str, dict[str, int]] = {}
-        for status_val, created_at in rows:
-            # Round down to bucket
-            bucket_start = created_at.replace(
-                hour=(created_at.hour // bucket_hours) * bucket_hours,
-                minute=0, second=0, microsecond=0,
-            )
-            key = bucket_start.isoformat()
+        for bucket, status_val, count in rows:
+            key = bucket.isoformat()
             if key not in buckets:
                 buckets[key] = {"succeeded": 0, "failed": 0, "pending": 0, "dead_letter": 0}
             if status_val in buckets[key]:
-                buckets[key][status_val] += 1
-            else:
-                buckets[key][status_val] = 1
+                buckets[key][status_val] = int(count)
 
         return [
             {"timestamp": ts, **counts}
@@ -182,33 +173,29 @@ class AnalyticsService:
     async def get_event_volume(
         self, organization_id: UUID, window_hours: int = 24
     ) -> list[dict[str, Any]]:
-        """Event ingestion rate over time."""
+        """Event ingestion rate over time using SQL grouping."""
         now = datetime.now(UTC)
         start = now - timedelta(hours=window_hours)
 
+        trunc_precision = "hour" if window_hours <= 168 else "day"
+
         stmt = (
-            select(Event.created_at)
+            select(
+                func.date_trunc(trunc_precision, Event.created_at).label("bucket"),
+                func.count().label("count")
+            )
             .where(
                 Event.organization_id == organization_id,
                 Event.created_at >= start,
                 Event.deleted_at.is_(None),
             )
-            .order_by(Event.created_at)
+            .group_by(text("bucket"))
+            .order_by("bucket")
         )
         result = await self.session.execute(stmt)
         rows = result.all()
 
-        bucket_hours = 1 if window_hours <= 24 else (6 if window_hours <= 168 else 24)
-        buckets: dict[str, int] = {}
-        for (created_at,) in rows:
-            bucket_start = created_at.replace(
-                hour=(created_at.hour // bucket_hours) * bucket_hours,
-                minute=0, second=0, microsecond=0,
-            )
-            key = bucket_start.isoformat()
-            buckets[key] = buckets.get(key, 0) + 1
-
         return [
-            {"timestamp": ts, "count": count}
-            for ts, count in sorted(buckets.items())
+            {"timestamp": row.bucket.isoformat(), "count": int(row.count)}
+            for row in rows
         ]

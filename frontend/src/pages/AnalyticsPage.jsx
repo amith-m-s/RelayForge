@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { BarChart3 } from 'lucide-react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { apiJson } from '../api/client';
+import { useOrg } from '../hooks/useOrg';
+import { useToast } from '../components/ui/Toast';
 
 const chartTheme = {
   bg: 'rgba(30, 41, 59, 0.6)',
@@ -14,36 +16,41 @@ const chartTheme = {
 };
 
 export default function AnalyticsPage() {
+  const { currentOrg } = useOrg();
+  const toast = useToast();
   const [metrics, setMetrics] = useState([]);
   const [volume, setVolume] = useState([]);
   const [endpointHealth, setEndpointHealth] = useState([]);
-  const [window, setWindow] = useState(24);
+  const [timeWindow, setTimeWindow] = useState(24);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!currentOrg) return;
     const load = async () => {
       try {
         const [m, v, eh] = await Promise.all([
-          apiJson(`/analytics/delivery-metrics?window=${window}`),
-          apiJson(`/analytics/event-volume?window=${window}`),
+          apiJson(`/analytics/delivery-metrics?window=${timeWindow}`),
+          apiJson(`/analytics/event-volume?window=${timeWindow}`),
           apiJson('/analytics/endpoint-health'),
         ]);
         setMetrics(m);
         setVolume(v);
         setEndpointHealth(eh);
-      } catch { /* ignore */ }
+      } catch (err) {
+        toast.error('Failed to load analytics: ' + err.message);
+      }
       setLoading(false);
     };
     load();
-  }, [window]);
+  }, [currentOrg, timeWindow]);
 
-  const fmtTime = (ts) => {
+  const fmtTime = useCallback((ts) => {
     if (!ts) return '';
     const d = new Date(ts);
-    return window <= 24 ? d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : d.toLocaleDateString([], { month: 'short', day: 'numeric' });
-  };
+    return timeWindow <= 24 ? d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+  }, [timeWindow]);
 
-  const CustomTooltip = ({ active, payload, label }) => {
+  const CustomTooltip = useCallback(({ active, payload, label }) => {
     if (!active || !payload?.length) return null;
     return (
       <div className="chart-tooltip">
@@ -56,7 +63,42 @@ export default function AnalyticsPage() {
         ))}
       </div>
     );
-  };
+  }, [fmtTime]);
+
+  const performanceChart = useMemo(() => (
+    <ResponsiveContainer width="100%" height={320}>
+      <AreaChart data={metrics}>
+        <defs>
+          <linearGradient id="greenGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stopColor={chartTheme.green} stopOpacity={0.3} />
+            <stop offset="95%" stopColor={chartTheme.green} stopOpacity={0} />
+          </linearGradient>
+          <linearGradient id="redGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stopColor={chartTheme.red} stopOpacity={0.3} />
+            <stop offset="95%" stopColor={chartTheme.red} stopOpacity={0} />
+          </linearGradient>
+        </defs>
+        <CartesianGrid stroke={chartTheme.grid} strokeDasharray="3 3" />
+        <XAxis dataKey="timestamp" tickFormatter={fmtTime} stroke={chartTheme.text} fontSize={12} />
+        <YAxis stroke={chartTheme.text} fontSize={12} />
+        <Tooltip content={<CustomTooltip />} />
+        <Area type="monotone" dataKey="succeeded" stroke={chartTheme.green} fill="url(#greenGrad)" name="Succeeded" strokeWidth={2} />
+        <Area type="monotone" dataKey="failed" stroke={chartTheme.red} fill="url(#redGrad)" name="Failed" strokeWidth={2} />
+      </AreaChart>
+    </ResponsiveContainer>
+  ), [metrics, fmtTime, CustomTooltip]);
+
+  const volumeChart = useMemo(() => (
+    <ResponsiveContainer width="100%" height={260}>
+      <BarChart data={volume}>
+        <CartesianGrid stroke={chartTheme.grid} strokeDasharray="3 3" />
+        <XAxis dataKey="timestamp" tickFormatter={fmtTime} stroke={chartTheme.text} fontSize={12} />
+        <YAxis stroke={chartTheme.text} fontSize={12} />
+        <Tooltip content={<CustomTooltip />} />
+        <Bar dataKey="count" fill={chartTheme.blue} name="Events" radius={[4, 4, 0, 0]} />
+      </BarChart>
+    </ResponsiveContainer>
+  ), [volume, fmtTime, CustomTooltip]);
 
   if (loading) return <div className="page-loader"><div className="loader-spinner" /></div>;
 
@@ -68,7 +110,7 @@ export default function AnalyticsPage() {
           <p className="page-subtitle">Delivery performance and event metrics</p>
         </div>
         <div className="filter-group">
-          <select className="form-select" value={window} onChange={e => setWindow(Number(e.target.value))}>
+          <select className="form-select" value={timeWindow} onChange={e => setTimeWindow(Number(e.target.value))}>
             <option value={24}>Last 24 Hours</option>
             <option value={168}>Last 7 Days</option>
             <option value={720}>Last 30 Days</option>
@@ -82,26 +124,7 @@ export default function AnalyticsPage() {
           <h4 className="card-title">Delivery Performance</h4>
         </div>
         <div className="chart-container">
-          <ResponsiveContainer width="100%" height={320}>
-            <AreaChart data={metrics}>
-              <defs>
-                <linearGradient id="greenGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={chartTheme.green} stopOpacity={0.3} />
-                  <stop offset="95%" stopColor={chartTheme.green} stopOpacity={0} />
-                </linearGradient>
-                <linearGradient id="redGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={chartTheme.red} stopOpacity={0.3} />
-                  <stop offset="95%" stopColor={chartTheme.red} stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid stroke={chartTheme.grid} strokeDasharray="3 3" />
-              <XAxis dataKey="timestamp" tickFormatter={fmtTime} stroke={chartTheme.text} fontSize={12} />
-              <YAxis stroke={chartTheme.text} fontSize={12} />
-              <Tooltip content={<CustomTooltip />} />
-              <Area type="monotone" dataKey="succeeded" stroke={chartTheme.green} fill="url(#greenGrad)" name="Succeeded" strokeWidth={2} />
-              <Area type="monotone" dataKey="failed" stroke={chartTheme.red} fill="url(#redGrad)" name="Failed" strokeWidth={2} />
-            </AreaChart>
-          </ResponsiveContainer>
+          {performanceChart}
         </div>
       </div>
 
@@ -112,15 +135,7 @@ export default function AnalyticsPage() {
             <h4 className="card-title">Event Volume</h4>
           </div>
           <div className="chart-container">
-            <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={volume}>
-                <CartesianGrid stroke={chartTheme.grid} strokeDasharray="3 3" />
-                <XAxis dataKey="timestamp" tickFormatter={fmtTime} stroke={chartTheme.text} fontSize={12} />
-                <YAxis stroke={chartTheme.text} fontSize={12} />
-                <Tooltip content={<CustomTooltip />} />
-                <Bar dataKey="count" fill={chartTheme.blue} name="Events" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            {volumeChart}
           </div>
         </div>
 

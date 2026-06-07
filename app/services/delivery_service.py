@@ -120,16 +120,17 @@ class DeliveryService:
         return True
 
     async def purge_all_dead_letter(self, organization_id: UUID) -> int:
-        stmt = select(DeadLetterEvent).where(
-            DeadLetterEvent.organization_id == organization_id,
-            DeadLetterEvent.deleted_at.is_(None),
+        from sqlalchemy import update
+        now = datetime.now(UTC)
+        stmt = (
+            update(DeadLetterEvent)
+            .where(
+                DeadLetterEvent.organization_id == organization_id,
+                DeadLetterEvent.deleted_at.is_(None),
+            )
+            .values(deleted_at=now)
+            .execution_options(synchronize_session="fetch")
         )
         result = await self.session.execute(stmt)
-        events = result.scalars().all()
-        now = datetime.now(UTC)
-        count = 0
-        for event in events:
-            event.deleted_at = now
-            count += 1
         await self.session.flush()
-        return count
+        return int(result.rowcount)

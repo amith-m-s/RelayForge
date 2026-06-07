@@ -137,6 +137,7 @@ class AuthService:
         membership = await self.default_membership(user)
         token_row.revoked_at = datetime.now(UTC)
         new_token_row_id = uuid4()
+        token_row.replaced_by_token_id = new_token_row_id
         new_refresh_token = create_refresh_token(
             subject=str(user.id), token_id=str(new_token_row_id)
         )
@@ -145,7 +146,6 @@ class AuthService:
             user_id=user.id,
             token_hash=hash_token(new_refresh_token),
             expires_at=datetime.now(UTC) + timedelta(days=30),
-            replaced_by_token_id=token_row.id,
         )
         self.session.add(new_token_row)
         await self.session.flush()

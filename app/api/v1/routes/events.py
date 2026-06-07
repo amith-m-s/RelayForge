@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 
 from fastapi import APIRouter, Depends, status
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import db_session, get_current_membership, require_role
@@ -22,6 +22,17 @@ async def create_event(
     session: AsyncSession = Depends(db_session),
     membership: Membership = Depends(require_role("owner", "admin", "developer")),
 ) -> EventOut:
+    if payload.idempotency_key:
+        existing_stmt = select(Event).where(
+            Event.organization_id == membership.organization_id,
+            Event.idempotency_key == payload.idempotency_key,
+            Event.deleted_at.is_(None)
+        )
+        existing_result = await session.execute(existing_stmt)
+        existing_event = existing_result.scalars().first()
+        if existing_event:
+            return EventOut.model_validate(existing_event)
+
     service = WebhookService(session)
     event, deliveries = await service.create_event(
         organization_id=membership.organization_id,
@@ -45,18 +56,22 @@ async def list_events(
     session: AsyncSession = Depends(db_session),
     membership: Membership = Depends(get_current_membership),
 ) -> EventList:
-    stmt = (
-        select(Event)
-        .where(Event.organization_id == membership.organization_id, Event.deleted_at.is_(None))
-        .order_by(Event.created_at.desc())
+    base_query = select(Event).where(
+        Event.organization_id == membership.organization_id,
+        Event.deleted_at.is_(None)
     )
+    
+    count_stmt = select(func.count()).select_from(base_query.subquery())
+    count_result = await session.execute(count_stmt)
+    total = count_result.scalar_one()
+
+    stmt = base_query.order_by(Event.created_at.desc()).offset(paging.offset).limit(paging.limit)
     result = await session.execute(stmt)
-    items = list(result.scalars().all())
-    total = len(items)
-    sliced = items[paging.offset : paging.offset + paging.limit]
+    items = result.scalars().all()
+
     return EventList(
-        items=[EventOut.model_validate(item) for item in sliced],
+        items=[EventOut.model_validate(item) for item in items],
         limit=paging.limit,
         offset=paging.offset,
-        total=total,
+        total=int(total),
     )

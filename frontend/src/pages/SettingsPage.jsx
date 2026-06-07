@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Key, Shield, Copy, Plus, Trash2, Loader2, Check } from 'lucide-react';
 import { apiJson } from '../api/client';
-import { useOrg } from '../hooks/useOrg';
 import Modal from '../components/ui/Modal';
+import ConfirmDialog from '../components/ui/ConfirmDialog';
 import { useToast } from '../components/ui/Toast';
 import EmptyState from '../components/EmptyState';
 
@@ -49,13 +49,16 @@ function ApiKeysTab() {
   const [creating, setCreating] = useState(false);
   const [newKey, setNewKey] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [confirmRevoke, setConfirmRevoke] = useState({ isOpen: false, id: null });
   const { addToast } = useToast();
 
   const load = async () => {
     try {
       const data = await apiJson('/api-keys?limit=100');
       setKeys(data.items || []);
-    } catch { /* ignore */ }
+    } catch (err) {
+      addToast('Failed to load API keys', 'error');
+    }
     setLoading(false);
   };
 
@@ -74,8 +77,13 @@ function ApiKeysTab() {
     setCreating(false);
   };
 
-  const revoke = async (id) => {
-    if (!confirm('Revoke this API key?')) return;
+  const handleRevokeClick = (id) => {
+    setConfirmRevoke({ isOpen: true, id });
+  };
+
+  const executeRevoke = async () => {
+    const id = confirmRevoke.id;
+    setConfirmRevoke({ isOpen: false, id: null });
     try {
       await apiJson(`/api-keys/${id}`, { method: 'DELETE' });
       addToast('Key revoked', 'success');
@@ -137,7 +145,7 @@ function ApiKeysTab() {
                   <td className="text-muted text-sm">{new Date(k.created_at).toLocaleDateString()}</td>
                   <td>
                     {k.is_active && (
-                      <button className="btn btn-ghost btn-sm" onClick={() => revoke(k.id)}><Trash2 size={14} /></button>
+                      <button className="btn btn-ghost btn-sm" onClick={() => handleRevokeClick(k.id)} style={{ color: 'var(--color-error)' }}><Trash2 size={14} /></button>
                     )}
                   </td>
                 </tr>
@@ -161,6 +169,17 @@ function ApiKeysTab() {
           </div>
         </form>
       </Modal>
+
+      {/* Revoke confirmation */}
+      <ConfirmDialog
+        isOpen={confirmRevoke.isOpen}
+        title="Revoke API Key"
+        message="Are you sure you want to revoke this API key? Systems using this key will be blocked immediately."
+        confirmText="Revoke Key"
+        type="danger"
+        onConfirm={executeRevoke}
+        onCancel={() => setConfirmRevoke({ isOpen: false, id: null })}
+      />
     </div>
   );
 }
@@ -171,13 +190,16 @@ function RetryPoliciesTab() {
   const [showCreate, setShowCreate] = useState(false);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({ name: '', max_attempts: 8, base_delay_seconds: 30, max_delay_seconds: 3600 });
+  const [confirmDelete, setConfirmDelete] = useState({ isOpen: false, id: null });
   const { addToast } = useToast();
 
   const load = async () => {
     try {
       const data = await apiJson('/retry-policies?limit=100');
       setPolicies(data.items || []);
-    } catch { /* ignore */ }
+    } catch (err) {
+      addToast('Failed to load retry policies', 'error');
+    }
     setLoading(false);
   };
 
@@ -196,8 +218,13 @@ function RetryPoliciesTab() {
     setCreating(false);
   };
 
-  const remove = async (id) => {
-    if (!confirm('Delete this retry policy?')) return;
+  const handleDeleteClick = (id) => {
+    setConfirmDelete({ isOpen: true, id });
+  };
+
+  const executeDelete = async () => {
+    const id = confirmDelete.id;
+    setConfirmDelete({ isOpen: false, id: null });
     try {
       await apiJson(`/retry-policies/${id}`, { method: 'DELETE' });
       addToast('Policy deleted', 'success');
@@ -242,7 +269,7 @@ function RetryPoliciesTab() {
                   <td>{p.max_delay_seconds}s</td>
                   <td className="text-muted text-sm">{new Date(p.created_at).toLocaleDateString()}</td>
                   <td>
-                    <button className="btn btn-ghost btn-sm" onClick={() => remove(p.id)}><Trash2 size={14} /></button>
+                    <button className="btn btn-ghost btn-sm" onClick={() => handleDeleteClick(p.id)} style={{ color: 'var(--color-error)' }}><Trash2 size={14} /></button>
                   </td>
                 </tr>
               ))}
@@ -279,6 +306,17 @@ function RetryPoliciesTab() {
           </div>
         </form>
       </Modal>
+
+      {/* Delete confirmation */}
+      <ConfirmDialog
+        isOpen={confirmDelete.isOpen}
+        title="Delete Retry Policy"
+        message="Are you sure you want to delete this retry policy? Webhooks linked to this policy will revert to default retry settings."
+        confirmText="Delete Policy"
+        type="danger"
+        onConfirm={executeDelete}
+        onCancel={() => setConfirmDelete({ isOpen: false, id: null })}
+      />
     </div>
   );
 }

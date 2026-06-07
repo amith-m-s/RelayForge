@@ -2,7 +2,7 @@ Metadata-Version: 2.4
 Name: relayforge
 Version: 0.1.0
 Summary: Multi-tenant webhook delivery and API automation platform
-Requires-Python: >=3.12
+Requires-Python: >=3.11
 Requires-Dist: fastapi>=0.115.0
 Requires-Dist: uvicorn[standard]>=0.30.0
 Requires-Dist: sqlalchemy>=2.0.30
