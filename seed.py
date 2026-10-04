@@ -1,21 +1,33 @@
 import asyncio
+import os
+
 from app.db.session import AsyncSessionLocal
 from app.services.auth_service import AuthService
 
+
 async def main():
+    password = os.getenv("SEED_ADMIN_PASSWORD")
+    if not password:
+        raise RuntimeError("SEED_ADMIN_PASSWORD must be set before running the seed script")
+
+    email = os.getenv("SEED_ADMIN_EMAIL", "admin@relayforge.local")
+    full_name = os.getenv("SEED_ADMIN_NAME", "System Administrator")
+    organization_name = os.getenv("SEED_ORGANIZATION", "Acme Corp")
+
     async with AsyncSessionLocal() as session:
         auth_service = AuthService(session)
         try:
-            user = await auth_service.register(
-                email="admin@relayforge.io",
-                full_name="System Administrator",
-                password="Password12345!",
-                organization_name="Acme Corp"
+            await auth_service.register(
+                email=email,
+                full_name=full_name,
+                password=password,
+                organization_name=organization_name,
             )
             await session.commit()
-            print("Successfully seeded admin user: admin@relayforge.io / Password12345!")
-        except ValueError as e:
-            print("Seeding skipped or already seeded:", e)
+            print(f"Successfully seeded admin user: {email}")
+        except ValueError as exc:
+            print("Seeding skipped or already seeded:", exc)
+
 
 if __name__ == "__main__":
     asyncio.run(main())
