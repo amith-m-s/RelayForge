@@ -7,7 +7,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.security import hash_token
+from app.core.security import encrypt_webhook_secret
 from app.models.dead_letter_event import DeadLetterEvent
 from app.models.delivery import Delivery
 from app.models.delivery_attempt import DeliveryAttempt
@@ -43,7 +43,7 @@ class WebhookService:
             organization_id=organization_id,
             name=name.strip(),
             url=url,
-            secret_hash=hash_token(secret),
+            secret_encrypted=encrypt_webhook_secret(secret),
             event_filter=event_filter,
             retry_policy_id=retry_policy_id,
             status="active",
