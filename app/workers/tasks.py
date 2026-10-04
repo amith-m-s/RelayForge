@@ -13,7 +13,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
 from app.core.config import get_settings
-from app.core.security import sign_webhook_payload
+from app.core.security import decrypt_webhook_secret, sign_webhook_payload
 from app.db.session import AsyncSessionLocal
 from app.models.dead_letter_event import DeadLetterEvent
 from app.models.delivery import Delivery
@@ -123,7 +123,7 @@ async def _dispatch_delivery_async(
         signature = sign_webhook_payload(
             payload_bytes,
             timestamp,
-            secret=endpoint.secret_hash,
+            secret=decrypt_webhook_secret(endpoint.secret_encrypted),
         )
 
         headers = {
