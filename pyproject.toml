@@ -25,6 +25,7 @@ dependencies = [
   "python-multipart>=0.0.9",
   "structlog>=24.1.0",
   "orjson>=3.10.0",
+  "cryptography>=42.0.0",
   "asgiref>=3.8.1",
 ]
 
