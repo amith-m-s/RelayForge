@@ -1,4 +1,4 @@
-"""Encrypt stored webhook signing secrets.
+"""Prepare webhook secret encryption with safe rotation.
 
 Revision ID: 0003_webhook_secret_encryption
 Revises: 0002_event_idempotency
@@ -13,26 +13,17 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.alter_column(
+    op.add_column(
         "webhook_endpoints",
-        "secret_hash",
-        new_column_name="secret_encrypted",
-        existing_type=sa.String(length=64),
-        type_=sa.Text(),
-        existing_nullable=False,
+        sa.Column("secret_encrypted", sa.Text(), nullable=True),
     )
+    # Existing secret_hash values are one-way hashes and cannot be converted
+    # into the original signing secret. Require explicit secret rotation.
     op.execute(
         "UPDATE webhook_endpoints SET status='disabled' "
-        "WHERE secret_encrypted IS NOT NULL"
+        "WHERE deleted_at IS NULL"
     )
 
 
 def downgrade() -> None:
-    op.alter_column(
-        "webhook_endpoints",
-        "secret_encrypted",
-        new_column_name="secret_hash",
-        existing_type=sa.Text(),
-        type_=sa.String(length=64),
-        existing_nullable=False,
-    )
+    op.drop_column("webhook_endpoints", "secret_encrypted")
