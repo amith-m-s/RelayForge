@@ -9,6 +9,8 @@ from typing import Any
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 
+from cryptography.fernet import Fernet
+
 from app.core.config import get_settings
 
 pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
@@ -102,3 +104,13 @@ def sign_webhook_payload(raw_body: bytes, timestamp: str, secret: str | None = N
 def verify_webhook_signature(raw_body: bytes, timestamp: str, signature: str, secret: str | None = None) -> bool:
     expected = sign_webhook_payload(raw_body, timestamp, secret)
     return hmac.compare_digest(expected, signature)
+
+
+def encrypt_webhook_secret(secret: str) -> str:
+    key = get_settings().webhook_encryption_key.encode("utf-8")
+    return Fernet(key).encrypt(secret.encode("utf-8")).decode("utf-8")
+
+
+def decrypt_webhook_secret(ciphertext: str) -> str:
+    key = get_settings().webhook_encryption_key.encode("utf-8")
+    return Fernet(key).decrypt(ciphertext.encode("utf-8")).decode("utf-8")
