@@ -47,4 +47,11 @@ class Event(Base):
     __table_args__ = (
         Index("ix_events_org_created", "organization_id", "created_at"),
         Index("ix_events_org_event_key", "organization_id", "event_key"),
+        Index(
+            "uq_events_org_idempotency_active",
+            "organization_id",
+            "idempotency_key",
+            unique=True,
+            postgresql_where="idempotency_key IS NOT NULL AND deleted_at IS NULL",
+        ),
     )
