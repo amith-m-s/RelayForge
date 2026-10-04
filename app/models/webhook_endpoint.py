@@ -25,7 +25,7 @@ class WebhookEndpoint(Base):
     )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     url: Mapped[str] = mapped_column(Text, nullable=False)
-    secret_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    secret_encrypted: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[str] = mapped_column(String(50), nullable=False, server_default=text("'active'"))
     event_filter: Mapped[str] = mapped_column(Text, nullable=False, server_default=text("'*'"))
     retry_policy_id: Mapped[UUID | None] = mapped_column(
