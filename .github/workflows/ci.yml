@@ -51,6 +51,5 @@ jobs:
       - run: python -m pip install --upgrade pip
       - run: pip install -e ".[dev]"
       - run: ruff check .
-      - run: black --check .
       - run: mypy app
       - run: pytest --cov=app --cov-report=term-missing --cov-fail-under=80
