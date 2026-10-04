@@ -19,7 +19,6 @@ from app.schemas.organizations import (
     MemberList,
     MemberOut,
     OrganizationCreate,
-    OrganizationList,
     OrganizationOut,
     OrganizationUpdate,
 )
