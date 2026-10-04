@@ -13,7 +13,6 @@ from app.api.v1.router import api_router
 from app.core.config import get_settings
 from app.core.errors import register_exception_handlers
 from app.core.logging import configure_logging
-from app.middleware.idempotency import IdempotencyMiddleware
 from app.middleware.rate_limit import RateLimitMiddleware
 from app.middleware.request_id import RequestIdMiddleware
 
@@ -35,9 +34,9 @@ app = FastAPI(
     title="RelayForge",
     version="0.1.0",
     description=(
-        "Production-grade, multi-tenant webhook delivery and API automation platform. "
-        "RelayForge provides reliable event intake, fan-out delivery with HMAC signing, "
-        "automatic retries with exponential backoff, dead-letter queues, "
+        "Multi-tenant webhook delivery and API automation reference implementation. "
+        "RelayForge provides event intake, fan-out delivery with HMAC signing, "
+        "automatic retries with bounded backoff, dead-letter handling, "
         "and real-time analytics."
     ),
     openapi_url="/api/v1/openapi.json",
@@ -64,7 +63,6 @@ app.add_middleware(
     expose_headers=["x-request-id", "x-ratelimit-remaining"],
 )
 app.add_middleware(RequestIdMiddleware)
-app.add_middleware(IdempotencyMiddleware)
 app.add_middleware(RateLimitMiddleware)
 
 # --- Exception handlers ---
