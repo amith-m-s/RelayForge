@@ -91,6 +91,12 @@ async def update_endpoint(
             status_code=status.HTTP_404_NOT_FOUND, detail="Webhook endpoint not found"
         )
 
+    if payload.status == "active" and payload.secret is None and endpoint.secret_encrypted is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Rotate the webhook secret before enabling this endpoint",
+        )
+
     service = WebhookService(session)
     endpoint = await service.update_endpoint(
         endpoint,
