@@ -10,7 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import db_session, get_current_membership, require_role
-from app.core.security import hash_token
+from app.core.security import encrypt_webhook_secret
 from app.models.membership import Membership
 from app.models.webhook_endpoint import WebhookEndpoint
 from app.schemas.common import Paging
@@ -96,7 +96,7 @@ async def update_endpoint(
         endpoint,
         name=payload.name,
         url=str(payload.url) if payload.url else None,
-        secret_hash=hash_token(payload.secret) if payload.secret else None,
+        secret_encrypted=encrypt_webhook_secret(payload.secret) if payload.secret else None,
         event_filter=payload.event_filter,
         status=payload.status,
         retry_policy_id=payload.retry_policy_id,
