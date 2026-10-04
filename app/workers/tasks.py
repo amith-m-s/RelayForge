@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import random
 import time
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
@@ -29,12 +30,12 @@ def _retry_delay_seconds(
     base_delay = policy.base_delay_seconds if policy else 30
     max_delay = policy.max_delay_seconds if policy else 3600
 
-    delay = min(
+    exponential = min(
         max_delay,
         base_delay * (2 ** max(attempt_count - 1, 0)),
     )
-
-    return int(delay)
+    jittered = exponential * random.uniform(0.8, 1.2)
+    return int(min(max_delay, jittered))
 
 
 async def _dispatch_delivery_async(
