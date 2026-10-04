@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     celery_broker_url: str = "redis://redis:6379/1"
     celery_result_backend: str = "redis://redis:6379/2"
     webhook_signing_secret: str
+    webhook_encryption_key: str
 
     rate_limit_default: int = 100
     api_v1_prefix: str = "/api/v1"
