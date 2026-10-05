@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -11,7 +12,7 @@ from app.schemas.common import ORMModel
 class EventCreate(BaseModel):
     source: str = Field(min_length=2, max_length=255)
     event_type: str = Field(min_length=2, max_length=255)
-    payload: dict
+    payload: dict[str, Any]
     event_key: str | None = None
     idempotency_key: str | None = None
 
