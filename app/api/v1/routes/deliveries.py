@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -60,7 +61,7 @@ async def get_delivery_attempts(
     delivery_id: UUID,
     session: AsyncSession = Depends(db_session),
     membership: Membership = Depends(get_current_membership),
-) -> dict:
+) -> dict[str, Any]:
     service = DeliveryService(session)
     delivery = await service.get_for_organization(membership.organization_id, delivery_id)
     if delivery is None:
