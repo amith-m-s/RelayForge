@@ -76,7 +76,7 @@ def create_refresh_token(subject: str, token_id: str, expires_days: int | None =
         "iat": int(_utc_now().timestamp()),
         "jti": secrets.token_urlsafe(16),
     }
-    return jwt.encode(payload, settings.secret_key, algorithm=ALGORITHM)
+    return cast(str, jwt.encode(payload, settings.secret_key, algorithm=ALGORITHM))
 
 
 def decode_token(token: str, expected_type: str | None = None) -> dict[str, Any]:
