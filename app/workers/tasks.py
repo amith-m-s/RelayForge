@@ -5,7 +5,7 @@ import random
 import time
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
-from typing import Any, ParamSpec, TypeVar
+from typing import Any, Protocol, cast
 from uuid import UUID
 
 import httpx
@@ -24,14 +24,25 @@ from app.models.event import Event
 from app.models.retry_policy import RetryPolicy
 from app.models.webhook_endpoint import WebhookEndpoint
 
-P = ParamSpec("P")
-R = TypeVar("R")
+
+class CeleryTask(Protocol):
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        ...
+
+    def delay(self, *args: Any, **kwargs: Any) -> Any:
+        ...
+
+    def apply_async(self, *args: Any, **kwargs: Any) -> Any:
+        ...
 
 
-# Celery's runtime decorator is dynamically typed; this adapter keeps the
-# task implementation type-checked without suppressing the task bodies.
-def typed_task(*args: Any, **kwargs: Any) -> Callable[[Callable[P, R]], Callable[P, R]]:
-    return shared_task(*args, **kwargs)  # type: ignore[no-any-return]
+def typed_task(
+    *args: Any,
+    **kwargs: Any,
+) -> Callable[[Callable[..., Any]], CeleryTask]:
+    decorator = shared_task(*args, **kwargs)
+    typed_decorator = cast(Callable[[Callable[..., Any]], CeleryTask], decorator)
+    return typed_decorator
 
 
 def _retry_delay_seconds(
