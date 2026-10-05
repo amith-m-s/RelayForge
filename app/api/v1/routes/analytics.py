@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -16,7 +18,7 @@ router = APIRouter(prefix="/analytics", tags=["analytics"])
 async def overview(
     session: AsyncSession = Depends(db_session),
     membership: Membership = Depends(get_current_membership),
-) -> dict:
+) -> dict[str, Any]:
     service = AnalyticsService(session)
     return await service.get_overview(membership.organization_id)
 
@@ -26,7 +28,7 @@ async def delivery_metrics(
     window: int = Query(default=24, ge=1, le=720, description="Window in hours"),
     session: AsyncSession = Depends(db_session),
     membership: Membership = Depends(get_current_membership),
-) -> list[dict]:
+) -> list[dict[str, Any]]:
     service = AnalyticsService(session)
     return await service.get_delivery_metrics(membership.organization_id, window)
 
@@ -35,7 +37,7 @@ async def delivery_metrics(
 async def endpoint_health(
     session: AsyncSession = Depends(db_session),
     membership: Membership = Depends(get_current_membership),
-) -> list[dict]:
+) -> list[dict[str, Any]]:
     service = AnalyticsService(session)
     return await service.get_endpoint_health(membership.organization_id)
 
@@ -45,6 +47,6 @@ async def event_volume(
     window: int = Query(default=24, ge=1, le=720, description="Window in hours"),
     session: AsyncSession = Depends(db_session),
     membership: Membership = Depends(get_current_membership),
-) -> list[dict]:
+) -> list[dict[str, Any]]:
     service = AnalyticsService(session)
     return await service.get_event_volume(membership.organization_id, window)
