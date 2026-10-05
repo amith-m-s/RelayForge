@@ -182,7 +182,7 @@ class AnalyticsService:
         stmt = (
             select(
                 func.date_trunc(trunc_precision, Event.created_at).label("bucket"),
-                func.count().label("count")
+                func.count().label("event_count")
             )
             .where(
                 Event.organization_id == organization_id,
@@ -196,6 +196,6 @@ class AnalyticsService:
         rows = result.all()
 
         return [
-            {"timestamp": row.bucket.isoformat(), "count": int(row.count)}
+            {"timestamp": row.bucket.isoformat(), "count": int(row.event_count)}
             for row in rows
         ]
