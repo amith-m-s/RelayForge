@@ -42,6 +42,7 @@ jobs:
       CELERY_BROKER_URL: redis://localhost:6379/1
       CELERY_RESULT_BACKEND: redis://localhost:6379/2
       WEBHOOK_SIGNING_SECRET: ci-webhook-signing-secret-ci-webhook
+      WEBHOOK_ENCRYPTION_KEY: 7VwJg2pYq5w0w8e1fZ6L9rY0o7lB7o2lH8w4vX8c0zA=
 
     steps:
       - uses: actions/checkout@v4
