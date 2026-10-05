@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from redis.exceptions import RedisError
-from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
@@ -10,7 +10,11 @@ from app.core.redis_client import get_redis
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next) -> Response:
+    async def dispatch(
+        self,
+        request: Request,
+        call_next: RequestResponseEndpoint,
+    ) -> Response:
         settings = get_settings()
         tenant = request.headers.get("X-Organization-ID", "global")
         key = f"rate:{tenant}:{request.client.host if request.client else 'unknown'}"
