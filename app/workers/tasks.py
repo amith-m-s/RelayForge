@@ -356,7 +356,7 @@ def dispatch_delivery(
     return async_to_sync(_dispatch_delivery_async)(delivery_id)
 
 
-@shared_task(bind=True)  # type: ignore[misc]
+@shared_task(bind=True)
 def retry_delivery(
     self: Any,
     delivery_id: str,
@@ -370,7 +370,7 @@ def retry_delivery(
     }
 
 
-@shared_task  # type: ignore[misc]
+@shared_task
 def aggregate_delivery_metrics() -> dict[str, str]:
 
     settings = get_settings()
