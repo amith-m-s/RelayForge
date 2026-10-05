@@ -10,6 +10,7 @@ from uuid import UUID
 import httpx
 from asgiref.sync import async_to_sync
 from celery import shared_task
+from celery.app.task import Task
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
@@ -350,7 +351,7 @@ async def _dispatch_delivery_async(
     default_retry_delay=30,
 )  # type: ignore[misc]
 def dispatch_delivery(
-    self: Any,
+    self: Task,
     delivery_id: str,
 ) -> dict[str, str]:
     return async_to_sync(_dispatch_delivery_async)(delivery_id)
@@ -358,7 +359,7 @@ def dispatch_delivery(
 
 @shared_task(bind=True)
 def retry_delivery(
-    self: Any,
+    self: Task,
     delivery_id: str,
 ) -> dict[str, str]:
 
