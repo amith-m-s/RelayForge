@@ -5,6 +5,7 @@
 [![Last Commit](https://img.shields.io/github/last-commit/amith-m-s/RelayForge)](https://github.com/amith-m-s/RelayForge/commits/main)
 [![Issues](https://img.shields.io/github/issues/amith-m-s/RelayForge)](https://github.com/amith-m-s/RelayForge/issues)
 [![Stars](https://img.shields.io/github/stars/amith-m-s/RelayForge)](https://github.com/amith-m-s/RelayForge/stargazers)
+[![CodeQL](https://github.com/amith-m-s/RelayForge/actions/workflows/codeql.yml/badge.svg)](https://github.com/amith-m-s/RelayForge/actions/workflows/codeql.yml)
 
 # RelayForge
 
