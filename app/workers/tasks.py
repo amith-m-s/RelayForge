@@ -8,13 +8,18 @@ from uuid import UUID
 
 import httpx
 from asgiref.sync import async_to_sync
-from celery import shared_task
-from celery.app.task import Task
+from typing import Any, Callable, ParamSpec, TypeVar
 
-# Celery's decorator factory is dynamically typed, so mypy cannot preserve
-# the wrapped task's callable signature. The task bodies themselves remain typed.
-def typed_task(*args, **kwargs):
-    return shared_task(*args, **kwargs)
+from celery import shared_task
+
+P = ParamSpec("P")
+R = TypeVar("R")
+
+
+# Celery's runtime decorator is dynamically typed; this small typed adapter keeps
+# mypy strict without suppressing the task bodies.
+def typed_task(*args: Any, **kwargs: Any) -> Callable[[Callable[P, R]], Callable[P, R]]:
+    return shared_task(*args, **kwargs)  # type: ignore[no-any-return]
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
@@ -355,7 +360,7 @@ async def _dispatch_delivery_async(
     default_retry_delay=30,
 )
 def dispatch_delivery(
-    self: Task,
+    self: Any,
     delivery_id: str,
 ) -> dict[str, str]:
     return async_to_sync(_dispatch_delivery_async)(delivery_id)
