@@ -4,7 +4,6 @@ import json
 import random
 import time
 from datetime import UTC, datetime, timedelta
-from typing import Any
 from uuid import UUID
 
 import httpx
