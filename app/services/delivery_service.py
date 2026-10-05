@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from typing import Any, cast
 from uuid import UUID
 
 from sqlalchemy import desc, func, select
+from sqlalchemy.engine import CursorResult
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.dead_letter_event import DeadLetterEvent
@@ -133,4 +135,5 @@ class DeliveryService:
         )
         result = await self.session.execute(stmt)
         await self.session.flush()
-        return int(result.rowcount)
+        cursor_result = cast(CursorResult[Any], result)
+        return int(cursor_result.rowcount or 0)
