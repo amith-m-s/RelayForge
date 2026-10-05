@@ -45,7 +45,7 @@ jobs:
       WEBHOOK_ENCRYPTION_KEY: 7VwJg2pYq5w0w8e1fZ6L9rY0o7lB7o2lH8w4vX8c0zA=
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
