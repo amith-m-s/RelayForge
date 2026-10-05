@@ -3,23 +3,14 @@ from __future__ import annotations
 import json
 import random
 import time
+from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
+from typing import Any, ParamSpec, TypeVar
 from uuid import UUID
 
 import httpx
 from asgiref.sync import async_to_sync
-from typing import Any, Callable, ParamSpec, TypeVar
-
 from celery import shared_task
-
-P = ParamSpec("P")
-R = TypeVar("R")
-
-
-# Celery's runtime decorator is dynamically typed; this small typed adapter keeps
-# mypy strict without suppressing the task bodies.
-def typed_task(*args: Any, **kwargs: Any) -> Callable[[Callable[P, R]], Callable[P, R]]:
-    return shared_task(*args, **kwargs)  # type: ignore[no-any-return]
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
@@ -32,6 +23,15 @@ from app.models.delivery_attempt import DeliveryAttempt
 from app.models.event import Event
 from app.models.retry_policy import RetryPolicy
 from app.models.webhook_endpoint import WebhookEndpoint
+
+P = ParamSpec("P")
+R = TypeVar("R")
+
+
+# Celery's runtime decorator is dynamically typed; this adapter keeps the
+# task implementation type-checked without suppressing the task bodies.
+def typed_task(*args: Any, **kwargs: Any) -> Callable[[Callable[P, R]], Callable[P, R]]:
+    return shared_task(*args, **kwargs)  # type: ignore[no-any-return]
 
 
 def _retry_delay_seconds(
