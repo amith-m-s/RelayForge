@@ -10,6 +10,7 @@ from uuid import UUID
 import httpx
 from asgiref.sync import async_to_sync
 from celery import shared_task
+from celery.app.task import Task
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
