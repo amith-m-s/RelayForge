@@ -4,7 +4,7 @@ import hmac
 import secrets
 from datetime import UTC, datetime, timedelta
 from hashlib import sha256
-from typing import Any
+from typing import Any, cast
 
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -22,11 +22,11 @@ class TokenError(ValueError):
 
 
 def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
+    return cast(str, pwd_context.hash(password))
 
 
 def verify_password(password: str, hashed: str) -> bool:
-    return pwd_context.verify(password, hashed)
+    return cast(bool, pwd_context.verify(password, hashed))
 
 
 def _utc_now() -> datetime:
@@ -59,7 +59,7 @@ def create_access_token(
         payload["role"] = role
     if extra_claims:
         payload.update(extra_claims)
-    return jwt.encode(payload, settings.secret_key, algorithm=ALGORITHM)
+    return cast(str, jwt.encode(payload, settings.secret_key, algorithm=ALGORITHM))
 
 
 def create_refresh_token(subject: str, token_id: str, expires_days: int | None = None) -> str:
@@ -82,7 +82,7 @@ def create_refresh_token(subject: str, token_id: str, expires_days: int | None =
 def decode_token(token: str, expected_type: str | None = None) -> dict[str, Any]:
     settings = get_settings()
     try:
-        payload = jwt.decode(token, settings.secret_key, algorithms=[ALGORITHM])
+        payload = cast(dict[str, Any], jwt.decode(token, settings.secret_key, algorithms=[ALGORITHM]))
     except JWTError as exc:
         raise TokenError("Invalid token") from exc
     if expected_type is not None and payload.get("type") != expected_type:
