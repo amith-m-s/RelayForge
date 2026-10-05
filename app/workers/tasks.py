@@ -10,6 +10,11 @@ import httpx
 from asgiref.sync import async_to_sync
 from celery import shared_task
 from celery.app.task import Task
+
+# Celery's decorator factory is dynamically typed, so mypy cannot preserve
+# the wrapped task's callable signature. The task bodies themselves remain typed.
+def typed_task(*args, **kwargs):
+    return shared_task(*args, **kwargs)
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
@@ -344,11 +349,11 @@ async def _dispatch_delivery_async(
             }
 
 
-@shared_task(
+@typed_task(
     bind=True,
     max_retries=8,
     default_retry_delay=30,
-)  # type: ignore[misc]
+)
 def dispatch_delivery(
     self: Task,
     delivery_id: str,
@@ -356,7 +361,7 @@ def dispatch_delivery(
     return async_to_sync(_dispatch_delivery_async)(delivery_id)
 
 
-@shared_task(bind=True)
+@typed_task(bind=True)
 def retry_delivery(
     self: Task,
     delivery_id: str,
@@ -370,7 +375,7 @@ def retry_delivery(
     }
 
 
-@shared_task
+@typed_task
 def aggregate_delivery_metrics() -> dict[str, str]:
 
     settings = get_settings()
