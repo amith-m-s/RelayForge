@@ -13,4 +13,4 @@ class UserRepository(BaseRepository):
 
     async def get_by_email(self, email: str) -> User | None:
         stmt = select(User).where(User.email == email, User.deleted_at.is_(None))
-        return await self.get_one(stmt)  # type: ignore[return-value]
+        return await self.get_one(stmt)
