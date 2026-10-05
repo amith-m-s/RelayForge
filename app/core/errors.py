@@ -13,7 +13,7 @@ from uuid import UUID
 import structlog
 from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import ORJSONResponse
+from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException
 
 logger = structlog.get_logger()
@@ -112,7 +112,7 @@ def _build_error_response(
     message: str,
     details: dict[str, Any] | None = None,
     request_id: str | None = None,
-) -> ORJSONResponse:
+) -> JSONResponse:
     body: dict[str, Any] = {
         "error": {
             "code": code,
@@ -123,7 +123,7 @@ def _build_error_response(
         body["error"]["details"] = details
     if request_id:
         body["error"]["request_id"] = request_id
-    return ORJSONResponse(status_code=status_code, content=body)
+    return JSONResponse(status_code=status_code, content=body)
 
 
 # ---------------------------------------------------------------------------
