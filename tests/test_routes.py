@@ -22,8 +22,6 @@ def test_root(client: TestClient) -> None:
 
 
 def test_ready(client: TestClient) -> None:
-    # Readiness check performs deep dependency verification.
-    # In test environment, DB/Redis may be bypassed or simulated.
     response = client.get("/api/v1/ready")
     assert response.status_code in (200, 503)
 
