@@ -1,3 +1,11 @@
+[![CI](https://github.com/amith-m-s/RelayForge/actions/workflows/ci.yml/badge.svg)](https://github.com/amith-m-s/RelayForge/actions/workflows/ci.yml)
+[![Top Language](https://img.shields.io/github/languages/top/amith-m-s/RelayForge)](https://github.com/amith-m-s/RelayForge)
+[![Code Size](https://img.shields.io/github/languages/code-size/amith-m-s/RelayForge)](https://github.com/amith-m-s/RelayForge)
+[![Repo Size](https://img.shields.io/github/repo-size/amith-m-s/RelayForge)](https://github.com/amith-m-s/RelayForge)
+[![Last Commit](https://img.shields.io/github/last-commit/amith-m-s/RelayForge)](https://github.com/amith-m-s/RelayForge/commits/main)
+[![Issues](https://img.shields.io/github/issues/amith-m-s/RelayForge)](https://github.com/amith-m-s/RelayForge/issues)
+[![Stars](https://img.shields.io/github/stars/amith-m-s/RelayForge)](https://github.com/amith-m-s/RelayForge/stargazers)
+
 # RelayForge
 
 **Multi-tenant webhook delivery and event-routing engine built with FastAPI, PostgreSQL, Redis, and Celery.**
