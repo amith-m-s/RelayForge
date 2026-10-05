@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     environment: str = "local"
     debug: bool = False
 
-    secret_key: str
+    secret_key: str = ""
     access_token_expire_minutes: int = 15
     refresh_token_expire_days: int = 30
 
@@ -20,8 +20,8 @@ class Settings(BaseSettings):
     redis_url: str = "redis://redis:6379/0"
     celery_broker_url: str = "redis://redis:6379/1"
     celery_result_backend: str = "redis://redis:6379/2"
-    webhook_signing_secret: str
-    webhook_encryption_key: str
+    webhook_signing_secret: str = ""
+    webhook_encryption_key: str = ""
 
     rate_limit_default: int = 100
     api_v1_prefix: str = "/api/v1"
