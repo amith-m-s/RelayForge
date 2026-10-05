@@ -368,7 +368,7 @@ def dispatch_delivery(
 
 @typed_task(bind=True)
 def retry_delivery(
-    self: Task,
+    self: Any,
     delivery_id: str,
 ) -> dict[str, str]:
 
