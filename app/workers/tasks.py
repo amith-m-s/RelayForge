@@ -4,6 +4,7 @@ import json
 import random
 import time
 from datetime import UTC, datetime, timedelta
+from typing import Any
 from uuid import UUID
 
 import httpx
@@ -119,6 +120,15 @@ async def _dispatch_delivery_async(
         timestamp = str(
             int(datetime.now(UTC).timestamp())
         )
+
+        if not endpoint.secret_encrypted:
+            delivery.status = "dead_letter"
+            delivery.last_error = "Webhook endpoint secret is missing"
+            await session.commit()
+            return {
+                "delivery_id": delivery_id,
+                "status": "dead_letter",
+            }
 
         signature = sign_webhook_payload(
             payload_bytes,
@@ -338,19 +348,19 @@ async def _dispatch_delivery_async(
     bind=True,
     max_retries=8,
     default_retry_delay=30,
-)
+)  # type: ignore[misc]
 def dispatch_delivery(
-    self,
+    self: Any,
     delivery_id: str,
 ) -> dict[str, str]:
     return async_to_sync(_dispatch_delivery_async)(delivery_id)
 
 
-@shared_task(bind=True)
+@shared_task(bind=True)  # type: ignore[misc]
 def retry_delivery(
-    self,
+    self: Any,
     delivery_id: str,
-):
+) -> dict[str, str]:
 
     dispatch_delivery.delay(delivery_id)
 
@@ -360,7 +370,7 @@ def retry_delivery(
     }
 
 
-@shared_task
+@shared_task  # type: ignore[misc]
 def aggregate_delivery_metrics() -> dict[str, str]:
 
     settings = get_settings()
