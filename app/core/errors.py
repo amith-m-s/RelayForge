@@ -135,7 +135,7 @@ def register_exception_handlers(app: FastAPI) -> None:
     """Register all global exception handlers on the FastAPI app."""
 
     @app.exception_handler(RelayForgeError)
-    async def relay_forge_error_handler(request: Request, exc: RelayForgeError) -> ORJSONResponse:
+    async def relay_forge_error_handler(request: Request, exc: RelayForgeError) -> JSONResponse:
         request_id = request.headers.get("x-request-id")
         return _build_error_response(
             status_code=exc.status_code,
@@ -146,7 +146,7 @@ def register_exception_handlers(app: FastAPI) -> None:
         )
 
     @app.exception_handler(HTTPException)
-    async def http_exception_handler(request: Request, exc: HTTPException) -> ORJSONResponse:
+    async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
         request_id = request.headers.get("x-request-id")
         return _build_error_response(
             status_code=exc.status_code,
@@ -158,7 +158,7 @@ def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(RequestValidationError)
     async def validation_error_handler(
         request: Request, exc: RequestValidationError
-    ) -> ORJSONResponse:
+    ) -> JSONResponse:
         request_id = request.headers.get("x-request-id")
         errors = []
         for error in exc.errors():
@@ -178,7 +178,7 @@ def register_exception_handlers(app: FastAPI) -> None:
         )
 
     @app.exception_handler(Exception)
-    async def unhandled_exception_handler(request: Request, exc: Exception) -> ORJSONResponse:
+    async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
         request_id = request.headers.get("x-request-id")
         logger.error(
             "unhandled_exception",
