@@ -14,6 +14,11 @@ def slugify(value: str) -> str:
 
 
 def truncate(value: str, limit: int) -> str:
+    """Truncate text to at most *limit* characters, using a fitted ellipsis."""
+    if limit < 0:
+        raise ValueError("limit must be non-negative")
     if len(value) <= limit:
         return value
-    return value[: max(limit - 3, 0)] + "..."
+    if limit <= 3:
+        return "." * limit
+    return value[: limit - 3] + "..."
