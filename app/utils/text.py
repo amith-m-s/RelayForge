@@ -1,12 +1,16 @@
 from __future__ import annotations
 
 import re
+import unicodedata
 from typing import Final
 
 _SLUG_RE: Final = re.compile(r"[^a-z0-9]+")
 
 
 def slugify(value: str) -> str:
+    # Fold Latin diacritics so names such as "Café" remain searchable as "cafe".
+    value = unicodedata.normalize("NFKD", value)
+    value = "".join(char for char in value if not unicodedata.combining(char))
     value = value.strip().lower()
     value = _SLUG_RE.sub("-", value)
     value = value.strip("-")
