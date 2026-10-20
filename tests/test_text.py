@@ -7,6 +7,10 @@ def test_slugify_normalizes_text() -> None:
     assert slugify("  Hello, RelayForge!  ") == "hello-relayforge"
 
 
+def test_slugify_removes_latin_diacritics() -> None:
+    assert slugify("  Crème Brûlée & Café  ") == "creme-brulee-cafe"
+
+
 def test_slugify_empty_value_uses_fallback() -> None:
     assert slugify("!!!") == "organization"
 
