@@ -11,6 +11,19 @@ def test_slugify_removes_latin_diacritics() -> None:
     assert slugify("  Crème Brûlée & Café  ") == "creme-brulee-cafe"
 
 
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        ("Ｆｕｌｌｗｉｄｔｈ Ｃａｆé", "fullwidth-cafe"),
+        ("ﬂower power", "flower-power"),
+        ("Cafe\u0301", "cafe"),
+        ("İstanbul", "istanbul"),
+    ],
+)
+def test_slugify_normalizes_unicode_compatibility_forms(value: str, expected: str) -> None:
+    assert slugify(value) == expected
+
+
 def test_slugify_empty_value_uses_fallback() -> None:
     assert slugify("!!!") == "organization"
 
