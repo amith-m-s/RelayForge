@@ -14,9 +14,9 @@ def slugify(value: str) -> str:
     outside ASCII letters and digits become separators. Empty results fall back
     to "organization".
     """
-    value = unicodedata.normalize("NFKD", value)
+    value = unicodedata.normalize("NFKD", value.casefold())
     value = "".join(char for char in value if not unicodedata.combining(char))
-    value = value.strip().lower()
+    value = value.strip()
     value = _SLUG_RE.sub("-", value)
     value = value.strip("-")
     return value or "organization"
