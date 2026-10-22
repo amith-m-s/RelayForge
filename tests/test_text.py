@@ -18,6 +18,7 @@ def test_slugify_removes_latin_diacritics() -> None:
         ("ﬂower power", "flower-power"),
         ("Cafe\u0301", "cafe"),
         ("İstanbul", "istanbul"),
+        ("Straße", "strasse"),
     ],
 )
 def test_slugify_normalizes_unicode_compatibility_forms(value: str, expected: str) -> None:
