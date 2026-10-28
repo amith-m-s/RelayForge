@@ -14,7 +14,7 @@ def test_slugify_removes_latin_diacritics() -> None:
 @pytest.mark.parametrize(
     ("value", "expected"),
     [
-        ("Ｆｕｌｌｗｉｄｔｈ Ｃａｆé", "fullwidth-cafe"),
+        ("Ｆｕｌｌｗｉｄｔｈ Ｃａｆé", "fullwidth-cafe"),  # noqa: RUF001 -- intentional Unicode compatibility input
         ("ﬂower power", "flower-power"),
         ("Cafe\u0301", "cafe"),
         ("İstanbul", "istanbul"),
