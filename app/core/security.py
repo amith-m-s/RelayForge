@@ -4,7 +4,7 @@ import hmac
 import secrets
 from datetime import UTC, datetime, timedelta
 from hashlib import sha256
-from typing import Any, cast
+from typing import Any, Final, cast
 
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -15,6 +15,23 @@ from app.core.config import get_settings
 
 pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 ALGORITHM = "HS256"
+
+_RESERVED_JWT_CLAIMS: Final[frozenset[str]] = frozenset(
+    {
+        "aud",
+        "exp",
+        "iat",
+        "iss",
+        "jti",
+        "nbf",
+        "organization_id",
+        "role",
+        "sub",
+        "tenant_id",
+        "token_id",
+        "type",
+    }
+)
 
 
 class TokenError(ValueError):
@@ -40,6 +57,13 @@ def create_access_token(
     expires_minutes: int | None = None,
     extra_claims: dict[str, Any] | None = None,
 ) -> str:
+    """Create an access token without allowing extensions to replace security claims."""
+    if extra_claims:
+        reserved_claims = _RESERVED_JWT_CLAIMS.intersection(extra_claims)
+        if reserved_claims:
+            names = ", ".join(sorted(reserved_claims))
+            raise ValueError(f"extra_claims cannot override reserved JWT claims: {names}")
+
     settings = get_settings()
     payload: dict[str, Any] = {
         "sub": subject,
